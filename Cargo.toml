@@ -1,0 +1,17 @@
+[package]
+name = "pixel-sorting-rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+colors-transform = "0.2.11"
+easy-imgui-window = "0.3.0"
+eframe = "0.27.2"
+egui = "0.27.2"
+image = "0.25.1"
+rayon = "1.10.0"
+egui_extras = { version = "*", features = ["all_loaders"] }
+rfd = "0.14.1"
+rand = "0.9.0-alpha.1"
