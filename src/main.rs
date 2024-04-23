@@ -25,13 +25,14 @@ struct MyApp {
     is_mask_showed: bool,
     random_prob: f64,
     pixel_add_choice: pixel_generators::PixelAddChoice,
+    show_settings: bool,
 }
 
 impl Default for MyApp {
     fn default() -> Self {
         Self {
-            low_threshold: 0.0,
-            high_threshold: 120.0,
+            low_threshold: 195.0,
+            high_threshold: 255.0,
             invert_mask: false,
             opened_image: None,
             result_image: None,
@@ -39,8 +40,9 @@ impl Default for MyApp {
             last_error: None,
             is_error: true,
             is_mask_showed: false,
-            random_prob: 0.0,
+            random_prob: 0.45,
             pixel_add_choice: pixel_generators::PixelAddChoice::RandomPixel,
+            show_settings: false,
         }
     }
 }
@@ -80,46 +82,64 @@ impl App for MyApp {
 
             ui.separator();
 
-            ui.add_space(20.0);
-            ui.label("Mask Settings");
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.checkbox(&mut self.invert_mask, "Invert mask?");
-                ui.add_space(50.0);
+            if ui.button(if !self.show_settings { "Open Effect Settings" } else { "Close Effect Settings" }).clicked() {
+                self.show_settings = !self.show_settings;
+            }
 
-                let lt_slider = ui.add(egui::Slider::new(&mut self.low_threshold, 0.0..=256.0).text("Luma Low threshold"));
-                ui.add_space(5.0);
-                let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, 0.0..=256.0).text("Luma High threshold"));
-                if lt_slider.changed() || ht_slider.changed() {
-                    if self.is_mask_showed {
-                        self.loaded_texture = Some(
-                            load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
-                                mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask)
-                            ), ctx)
-                        );
-                    }
-                }
-                ui.add_space(10.0);
-            });
-            ui.separator();
-            ui.add_space(10.0);
+            if self.show_settings {
+                egui::Window::new("Effect Settings")
+                    .open(&mut self.show_settings) // Keeps the window open or closes it based on the bool
+                    .show(ctx, |ui| {
+                        ui.label("Mask Settings");
+                        ui.group(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.checkbox(&mut self.invert_mask, "Invert mask?");
+                                ui.add_space(50.0);
 
-            ui.label("Pixel Addition Settings");
-            ui.separator();
+                                let lt_slider = ui.add(egui::Slider::new(&mut self.low_threshold, 0.0..=256.0).text("Luma Low threshold"));
+                                ui.add_space(5.0);
+                                let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, 0.0..=256.0).text("Luma High threshold"));
+                                if lt_slider.changed() || ht_slider.changed() {
+                                    if self.is_mask_showed {
+                                        self.loaded_texture = Some(
+                                            load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
+                                                mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask)
+                                            ), ctx)
+                                        );
+                                    }
+                                }
+                                ui.add_space(10.0);
+                            });
+                        });
 
-            ui.horizontal(|ui| {
-                ui.add(egui::Slider::new(&mut self.random_prob, 0.0..=1.0).text("Pixel addition probability"));
-                ui.add_space(20.0);
-                egui::ComboBox::from_label("Pixel Addition Function")
-                    .selected_text(format!("{:?}", self.pixel_add_choice))
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomPixel, "Random Pixel");
-                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomRedShade, "Random Red Shade");
-                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomBlueShade, "Random Blue Shade");
-                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomGreenShade, "Random Green Shade");
-                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::Black, "Just black");
-                    })
-            });
+                        ui.add_space(10.0);
+
+                        ui.label("Pixel Addition Settings");
+                        ui.group(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.add(egui::Slider::new(&mut self.random_prob, 0.0..=1.0).text("Pixel addition probability"));
+                                ui.add_space(20.0);
+                                egui::ComboBox::from_label("Pixel Addition Function")
+                                    .selected_text(format!("{:?}", self.pixel_add_choice))
+                                    .show_ui(ui, |ui| {
+                                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomPixel, "Random Pixel");
+                                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomRedShade, "Random Red Shade");
+                                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomBlueShade, "Random Blue Shade");
+                                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::RandomGreenShade, "Random Green Shade");
+                                        ui.selectable_value(&mut self.pixel_add_choice, pixel_generators::PixelAddChoice::Black, "Just black");
+                                    })
+                            });
+                        });
+
+                        ui.add_space(10.0);
+
+                        ui.label("Sorting Settings");
+                        ui.group(|ui| {
+
+                        });
+
+                    });
+            }
             ui.separator();
             ui.add_space(20.0);
 
@@ -218,8 +238,8 @@ fn main() {
         viewport: ViewportBuilder {
             maximize_button: Some(false),
             resizable: Some(true),
-            min_inner_size: Some(vec2(730.0, 600.0)),
-            inner_size: Some(vec2(730.0, 600.0)),
+            min_inner_size: Some(vec2(800.0, 600.0)),
+            inner_size: Some(vec2(800.0, 600.0)),
             ..Default::default()
         },
         ..Default::default()
