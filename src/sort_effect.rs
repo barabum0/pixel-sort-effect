@@ -96,25 +96,12 @@ pub fn process_sorting_effect<F>(image: &ImageBuffer::<Rgba<u8>, Vec<u8>>, mask_
 
     let mut sorted_pixels: Vec<Rgba<u8>> = Vec::with_capacity((width * height) as usize);
     let mut new_rows_iter = new_rows.iter().flatten();
-    // let blank = Rgba::from_channels(0_u8, 0_u8, 0_u8, 255_u8);
     for y in 0..height {
         for x in 0..width {
             if mask_image.get_pixel(x, y).0[0] == 255 {
-                // if x > (width as f64 * 0.8).round() as u32 {
-                //     sorted_pixels.push(Rgba([
-                //         rng.gen_range(0..=255) as u8,
-                //         rng.gen_range(0..=255) as u8,
-                //         rng.gen_range(0..=255) as u8,
-                //         255])
-                //     );
-                //     new_rows_iter.next();
-                // } else {
-                //
-                // }
                 sorted_pixels.push(*new_rows_iter.next().unwrap())
             } else {
                 sorted_pixels.push(*image.get_pixel(x, y))
-                // sorted_pixels.push(&blank)
             }
         }
     }
