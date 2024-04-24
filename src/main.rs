@@ -5,6 +5,7 @@ use image::{DynamicImage, Pixel};
 use rand::Rng;
 use rayon::prelude::*;
 use rfd::FileDialog;
+use crate::pixel::PixelSortKeyChoice;
 
 use crate::sort_effect::{mask_image, process_sorting_effect};
 
@@ -25,6 +26,7 @@ struct MyApp {
     is_mask_showed: bool,
     random_prob: f64,
     pixel_add_choice: pixel_generators::PixelAddChoice,
+    pixel_sort_choice: PixelSortKeyChoice,
     show_settings: bool,
 }
 
@@ -42,6 +44,7 @@ impl Default for MyApp {
             is_mask_showed: false,
             random_prob: 0.45,
             pixel_add_choice: pixel_generators::PixelAddChoice::RandomPixel,
+            pixel_sort_choice: PixelSortKeyChoice::Hue,
             show_settings: false,
         }
     }
@@ -135,9 +138,18 @@ impl App for MyApp {
 
                         ui.label("Sorting Settings");
                         ui.group(|ui| {
-
+                            egui::ComboBox::from_label("Pixel Sorting Key Function")
+                                .selected_text(format!("{:?}", self.pixel_sort_choice))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(&mut self.pixel_sort_choice, PixelSortKeyChoice::Hue, "Hue");
+                                    ui.selectable_value(&mut self.pixel_sort_choice, PixelSortKeyChoice::BrokenHue, "Broken Hue");
+                                    ui.selectable_value(&mut self.pixel_sort_choice, PixelSortKeyChoice::ColorSum, "Sum of colors");
+                                    ui.selectable_value(&mut self.pixel_sort_choice, PixelSortKeyChoice::Luminance, "Luminance");
+                                    ui.selectable_value(&mut self.pixel_sort_choice, PixelSortKeyChoice::Red, "Red channel");
+                                    ui.selectable_value(&mut self.pixel_sort_choice, PixelSortKeyChoice::Green, "Green channel");
+                                    ui.selectable_value(&mut self.pixel_sort_choice, PixelSortKeyChoice::Blue, "Blue channel");
+                                })
                         });
-
                     });
             }
             ui.separator();
@@ -177,16 +189,24 @@ impl App for MyApp {
                         let (r_image, duration) = process_sorting_effect(
                             &self.opened_image.clone().unwrap().to_rgba8(), &mask, self.random_prob,
                             |x, y, p| {
-                            match self.pixel_add_choice {
-                                pixel_generators::PixelAddChoice::RandomPixel => { pixel_generators::get_random_pixel() }
-                                pixel_generators::PixelAddChoice::RandomRedShade => { pixel_generators::get_random_red_shade() }
-                                pixel_generators::PixelAddChoice::RandomBlueShade => { pixel_generators::get_random_blue_shade() }
-                                pixel_generators::PixelAddChoice::RandomGreenShade => { pixel_generators::get_random_green_shade() }
-                                pixel_generators::PixelAddChoice::Black => { pixel_generators::get_black() }
-                            }
-                        }, | p | {
-                                pixel::hue(p)
-                            }
+                                match self.pixel_add_choice {
+                                    pixel_generators::PixelAddChoice::RandomPixel => { pixel_generators::get_random_pixel() }
+                                    pixel_generators::PixelAddChoice::RandomRedShade => { pixel_generators::get_random_red_shade() }
+                                    pixel_generators::PixelAddChoice::RandomBlueShade => { pixel_generators::get_random_blue_shade() }
+                                    pixel_generators::PixelAddChoice::RandomGreenShade => { pixel_generators::get_random_green_shade() }
+                                    pixel_generators::PixelAddChoice::Black => { pixel_generators::get_black() }
+                                }
+                            }, |p| {
+                                match self.pixel_sort_choice {
+                                    PixelSortKeyChoice::Hue => { pixel::hue(p) }
+                                    PixelSortKeyChoice::BrokenHue => { pixel::some_color(p) }
+                                    PixelSortKeyChoice::Luminance => { pixel::luminance(p).round() as i16 }
+                                    PixelSortKeyChoice::Red => { p.0[0] as i16 }
+                                    PixelSortKeyChoice::Green => { p.0[1] as i16 }
+                                    PixelSortKeyChoice::Blue => { p.0[2] as i16 }
+                                    PixelSortKeyChoice::ColorSum => { p.0[0] as i16 + p.0[1] as i16 + p.0[2] as i16 }
+                                }
+                            },
                         );
                         let result = DynamicImage::ImageRgba8(r_image);
                         self.loaded_texture = Some(load_texture_from_dynamic_image(&result, ctx));

@@ -1,6 +1,19 @@
 use colors_transform::{Color, Rgb};
 use image::Rgba;
 
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum PixelSortKeyChoice {
+    Hue,
+    BrokenHue,
+    Luminance,
+    Red,
+    Green,
+    Blue,
+    ColorSum
+}
+
 pub fn luminance(pixel: &Rgba<u8>) -> f64 {
     0.2126 * (pixel.0[0] as f64) + 0.7152 * (pixel.0[1] as f64) + 0.0722 * (pixel.0[2] as f64)
 }
