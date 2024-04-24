@@ -1,11 +1,12 @@
+use std::time::{Duration, Instant};
 use eframe::{App, Frame, NativeOptions};
 use egui::{Color32, ColorImage, RichText, TextureHandle, vec2, ViewportBuilder};
-use image::{DynamicImage, Rgba};
+use image::{DynamicImage, ImageBuffer, Luma};
 use rfd::FileDialog;
+
 use crate::mask::MaskFuncChoice;
 use crate::pixel::{hue, luminance, PixelSortKeyChoice, some_color};
-
-use crate::sort_effect::{process_sorting_effect};
+use crate::sort_effect::process_sorting_effect;
 
 mod sort_effect;
 mod pixel_generators;
@@ -45,9 +46,53 @@ impl Default for MyApp {
             random_prob: 0.45,
             pixel_add_choice: pixel_generators::PixelAddChoice::RandomPixel,
             pixel_sort_choice: PixelSortKeyChoice::Hue,
-            mask_func_choice: mask::MaskFuncChoice::Luminance,
+            mask_func_choice: MaskFuncChoice::Luminance,
             show_settings: false,
         }
+    }
+}
+
+impl MyApp {
+    fn gen_mask(&self) -> DynamicImage {
+        DynamicImage::ImageLuma8(
+            mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, |p| {
+                match self.mask_func_choice {
+                    MaskFuncChoice::Luminance => { luminance(p) }
+                    MaskFuncChoice::Hue => { hue(p) as f64 }
+                    MaskFuncChoice::BrokenHue => { some_color(p) as f64 }
+                    MaskFuncChoice::Red => { p.0[0] as f64 }
+                    MaskFuncChoice::Green => { p.0[1] as f64 }
+                    MaskFuncChoice::Blue => { p.0[2] as f64 }
+                    MaskFuncChoice::ColorSum => { p.0[0] as f64 + p.0[1] as f64 + p.0[2] as f64 }
+                }
+            })
+        )
+    }
+
+    fn gen_effect(&self, mask: &ImageBuffer<Luma<u8>, Vec<u8>>) -> (DynamicImage, Duration) {
+        let start = Instant::now();
+        (DynamicImage::ImageRgba8(process_sorting_effect(
+            &self.opened_image.clone().unwrap().to_rgba8(), mask, self.random_prob,
+            |x, y, p| {
+                match self.pixel_add_choice {
+                    pixel_generators::PixelAddChoice::RandomPixel => { pixel_generators::get_random_pixel() }
+                    pixel_generators::PixelAddChoice::RandomRedShade => { pixel_generators::get_random_red_shade() }
+                    pixel_generators::PixelAddChoice::RandomBlueShade => { pixel_generators::get_random_blue_shade() }
+                    pixel_generators::PixelAddChoice::RandomGreenShade => { pixel_generators::get_random_green_shade() }
+                    pixel_generators::PixelAddChoice::Black => { pixel_generators::get_black() }
+                }
+            }, |p| {
+                match self.pixel_sort_choice {
+                    PixelSortKeyChoice::Hue => { hue(p) }
+                    PixelSortKeyChoice::BrokenHue => { some_color(p) }
+                    PixelSortKeyChoice::Luminance => { luminance(p).round() as i16 }
+                    PixelSortKeyChoice::Red => { p.0[0] as i16 }
+                    PixelSortKeyChoice::Green => { p.0[1] as i16 }
+                    PixelSortKeyChoice::Blue => { p.0[2] as i16 }
+                    PixelSortKeyChoice::ColorSum => { p.0[0] as i16 + p.0[1] as i16 + p.0[2] as i16 }
+                }
+            },
+        )), start.elapsed())
     }
 }
 
@@ -106,21 +151,7 @@ impl App for MyApp {
                                 let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, mask_range_from..=mask_range_to).text("Luma High threshold"));
                                 if lt_slider.changed() || ht_slider.changed() {
                                     if self.is_mask_showed {
-                                        self.loaded_texture = Some(
-                                            load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
-                                                mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, |p| {
-                                                    match self.mask_func_choice {
-                                                        MaskFuncChoice::Luminance => { luminance(p) }
-                                                        MaskFuncChoice::Hue => { hue(p) as f64 }
-                                                        MaskFuncChoice::BrokenHue => { some_color(p) as f64 }
-                                                        MaskFuncChoice::Red => { p.0[0] as f64 }
-                                                        MaskFuncChoice::Green => { p.0[1] as f64 }
-                                                        MaskFuncChoice::Blue => { p.0[2] as f64 }
-                                                        MaskFuncChoice::ColorSum => { p.0[0] as f64 + p.0[1] as f64 + p.0[2] as f64 }
-                                                    }
-                                                })
-                                            ), ctx)
-                                        );
+                                        self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
                                     }
                                 }
                                 ui.add_space(10.0);
@@ -190,19 +221,7 @@ impl App for MyApp {
                             self.is_error = true;
                         } else {
                             self.loaded_texture = Some(
-                                load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
-                                    mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, |p| {
-                                        match self.mask_func_choice {
-                                            MaskFuncChoice::Luminance => { luminance(p) }
-                                            MaskFuncChoice::Hue => { hue(p) as f64 }
-                                            MaskFuncChoice::BrokenHue => { some_color(p) as f64 }
-                                            MaskFuncChoice::Red => { p.0[0] as f64 }
-                                            MaskFuncChoice::Green => { p.0[1] as f64 }
-                                            MaskFuncChoice::Blue => { p.0[2] as f64 }
-                                            MaskFuncChoice::ColorSum => { p.0[0] as f64 + p.0[1] as f64 + p.0[2] as f64 }
-                                        }
-                                    })
-                                ), ctx)
+                                load_texture_from_dynamic_image(&self.gen_mask(), ctx)
                             );
                         }
                     } else if self.result_image != None {
@@ -219,41 +238,9 @@ impl App for MyApp {
                         self.last_error = Some("Image is not loaded".to_string());
                         self.is_error = true;
                     } else {
-                        let mask = mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, |p| {
-                            match self.mask_func_choice {
-                                MaskFuncChoice::Luminance => { luminance(p) }
-                                MaskFuncChoice::Hue => { hue(p) as f64 }
-                                MaskFuncChoice::BrokenHue => { some_color(p) as f64 }
-                                MaskFuncChoice::Red => { p.0[0] as f64 }
-                                MaskFuncChoice::Green => { p.0[1] as f64 }
-                                MaskFuncChoice::Blue => { p.0[2] as f64 }
-                                MaskFuncChoice::ColorSum => { p.0[0] as f64 + p.0[1] as f64 + p.0[2] as f64 }
-                            }
-                        });
+                        let mask = self.gen_mask().to_luma8();
 
-                        let (r_image, duration) = process_sorting_effect(
-                            &self.opened_image.clone().unwrap().to_rgba8(), &mask, self.random_prob,
-                            |x, y, p| {
-                                match self.pixel_add_choice {
-                                    pixel_generators::PixelAddChoice::RandomPixel => { pixel_generators::get_random_pixel() }
-                                    pixel_generators::PixelAddChoice::RandomRedShade => { pixel_generators::get_random_red_shade() }
-                                    pixel_generators::PixelAddChoice::RandomBlueShade => { pixel_generators::get_random_blue_shade() }
-                                    pixel_generators::PixelAddChoice::RandomGreenShade => { pixel_generators::get_random_green_shade() }
-                                    pixel_generators::PixelAddChoice::Black => { pixel_generators::get_black() }
-                                }
-                            }, |p| {
-                                match self.pixel_sort_choice {
-                                    PixelSortKeyChoice::Hue => { pixel::hue(p) }
-                                    PixelSortKeyChoice::BrokenHue => { pixel::some_color(p) }
-                                    PixelSortKeyChoice::Luminance => { pixel::luminance(p).round() as i16 }
-                                    PixelSortKeyChoice::Red => { p.0[0] as i16 }
-                                    PixelSortKeyChoice::Green => { p.0[1] as i16 }
-                                    PixelSortKeyChoice::Blue => { p.0[2] as i16 }
-                                    PixelSortKeyChoice::ColorSum => { p.0[0] as i16 + p.0[1] as i16 + p.0[2] as i16 }
-                                }
-                            },
-                        );
-                        let result = DynamicImage::ImageRgba8(r_image);
+                        let (result, duration) = self.gen_effect(&mask);
                         self.loaded_texture = Some(load_texture_from_dynamic_image(&result, ctx));
                         self.result_image = Some(result);
                         self.is_mask_showed = false;

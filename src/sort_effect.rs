@@ -17,13 +17,11 @@ pub fn process_sorting_effect<
     pixel_add_random_prob: f64,
     pixel_add_func: PA,
     pixel_sort_key_func: PF
-) -> (ImageBuffer::<Rgba<u8>, Vec<u8>>, Duration)
+) -> ImageBuffer::<Rgba<u8>, Vec<u8>>
 {
     let (width, height) = image.dimensions();
 
     let mut rows: Vec<Vec<&Rgba<u8>>> = pixel_matrix(&image);
-
-    let start = Instant::now();
 
     let new_rows: Vec<Vec<Rgba<u8>>> = rows.into_par_iter().enumerate()
         .map(|(y, mut row)| {
@@ -39,9 +37,6 @@ pub fn process_sorting_effect<
         })
         .collect();
 
-    let duration = start.elapsed();
-    println!("Time elapsed is: {:?}", duration);
-
     let mut sorted_pixels: Vec<Rgba<u8>> = Vec::with_capacity((width * height) as usize);
     let mut new_rows_iter = new_rows.iter().flatten();
     for y in 0..height {
@@ -54,5 +49,5 @@ pub fn process_sorting_effect<
         }
     }
 
-    (ImageBuffer::<Rgba<u8>, Vec<u8>>::from_vec(width, height, sorted_pixels.iter().flat_map(|p| p.channels().to_vec()).collect()).unwrap(), duration)
+    ImageBuffer::<Rgba<u8>, Vec<u8>>::from_vec(width, height, sorted_pixels.iter().flat_map(|p| p.channels().to_vec()).collect()).unwrap()
 }
