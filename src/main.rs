@@ -105,24 +105,43 @@ impl MyApp {
 impl App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                if ui.button("Choose File").clicked() {
-                    let file = FileDialog::new().pick_file();
-                    if let Some(file) = file {
-                        match image::open(&file.as_path().to_string_lossy().to_string()) {
-                            Ok(i) => {
-                                self.loaded_texture = Some(load_texture_from_dynamic_image(&i, ctx));
-                                self.opened_image = Some(i.clone());
-                                self.is_mask_showed = false;
-                                self.result_image = None;
-                            }
-                            Err(e) => {
-                                self.last_error = Some(e.to_string());
-                                self.is_error = true;
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Open").clicked() {
+                        let file = FileDialog::new().pick_file();
+                        if let Some(file) = file {
+                            match image::open(&file.as_path().to_string_lossy().to_string()) {
+                                Ok(i) => {
+                                    self.loaded_texture = Some(load_texture_from_dynamic_image(&i, ctx));
+                                    self.opened_image = Some(i.clone());
+                                    self.is_mask_showed = false;
+                                    self.result_image = None;
+                                }
+                                Err(e) => {
+                                    self.last_error = Some(e.to_string());
+                                    self.is_error = true;
+                                }
                             }
                         }
                     }
-                }
+                    if ui.button("Close file").clicked() {
+                        self.loaded_texture = None;
+                        self.opened_image = None;
+                        self.is_mask_showed = false;
+                        self.result_image = None;
+                        self.show_settings = false;
+                    }
+                });
+                ui.menu_button("Settings", |ui| {
+                    if ui.button(if !self.show_settings { "Open Effect Settings" } else { "Close Effect Settings" }).clicked() {
+                        self.show_settings = !self.show_settings;
+                    }
+                })
+            });
+
+            ui.separator();
+
+            ui.horizontal(|ui| {
                 ui.heading("Pixel Sort Effect");
 
                 if self.last_error != None {
@@ -135,11 +154,6 @@ impl App for MyApp {
                 }
             });
 
-            ui.separator();
-
-            if ui.button(if !self.show_settings { "Open Effect Settings" } else { "Close Effect Settings" }).clicked() {
-                self.show_settings = !self.show_settings;
-            }
 
             if self.show_settings {
                 egui::Window::new("Effect Settings")
@@ -213,7 +227,7 @@ impl App for MyApp {
                         });
                     });
             }
-            ui.separator();
+
             ui.add_space(20.0);
 
             ui.horizontal(|ui| {
