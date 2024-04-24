@@ -1,9 +1,6 @@
-use colors_transform::Color;
 use eframe::{App, Frame, NativeOptions};
-use egui::{Color32, ColorImage, RichText, TextureHandle, vec2, ViewportBuilder, Widget};
-use image::{DynamicImage, Pixel};
-use rand::Rng;
-use rayon::prelude::*;
+use egui::{Color32, ColorImage, RichText, TextureHandle, vec2, ViewportBuilder};
+use image::{DynamicImage};
 use rfd::FileDialog;
 use crate::pixel::{luminance, PixelSortKeyChoice};
 
