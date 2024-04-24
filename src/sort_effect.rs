@@ -22,9 +22,16 @@ fn pixel_matrix(image: &ImageBuffer::<Rgba<u8>, Vec<u8>>) -> Vec<Vec<&Rgba<u8>>>
     image.rows().map(|r| r.collect()).collect()
 }
 
-pub fn process_sorting_effect<F>(image: &ImageBuffer::<Rgba<u8>, Vec<u8>>, mask_image: &ImageBuffer::<Luma<u8>, Vec<u8>>, pixel_add_random_prob: f64, pixel_add_func: F)
-                                        -> (ImageBuffer::<Rgba<u8>, Vec<u8>>, Duration)
-    where F: Fn(usize, usize, Rgba<u8>) -> Rgba<u8> + Sync + Send
+pub fn process_sorting_effect<
+    PA: Fn(usize, usize, Rgba<u8>) -> Rgba<u8> + Sync + Send,
+    PF: Fn(&Rgba<u8>) -> i16 + Sync + Send
+>(
+    image: &ImageBuffer::<Rgba<u8>, Vec<u8>>,
+    mask_image: &ImageBuffer::<Luma<u8>, Vec<u8>>,
+    pixel_add_random_prob: f64,
+    pixel_add_func: PA,
+    pixel_sort_key_func: PF
+) -> (ImageBuffer::<Rgba<u8>, Vec<u8>>, Duration)
 {
     let (width, height) = image.dimensions();
 
@@ -41,7 +48,7 @@ pub fn process_sorting_effect<F>(image: &ImageBuffer::<Rgba<u8>, Vec<u8>>, mask_
                 .map(|(x, e)| (x, e.0, **e.1))
                 .collect();
             let mut r: Vec<Rgba<u8>> = re.into_iter().map(| (x, y, p) | if rng.gen_bool(pixel_add_random_prob) {  pixel_add_func(x, y, p) } else { p }).collect();
-            r.par_sort_by_key(|p: &Rgba<u8>| pixel::hue(&p));
+            r.par_sort_by_key(|p: &Rgba<u8>| pixel_sort_key_func(&p));
             r
         })
         .collect();

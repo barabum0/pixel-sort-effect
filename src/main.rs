@@ -174,7 +174,9 @@ impl App for MyApp {
                     } else {
                         let mask = mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask);
 
-                        let (r_image, duration) = process_sorting_effect(&self.opened_image.clone().unwrap().to_rgba8(), &mask, self.random_prob, |x, y, p| {
+                        let (r_image, duration) = process_sorting_effect(
+                            &self.opened_image.clone().unwrap().to_rgba8(), &mask, self.random_prob,
+                            |x, y, p| {
                             match self.pixel_add_choice {
                                 pixel_generators::PixelAddChoice::RandomPixel => { pixel_generators::get_random_pixel() }
                                 pixel_generators::PixelAddChoice::RandomRedShade => { pixel_generators::get_random_red_shade() }
@@ -182,7 +184,10 @@ impl App for MyApp {
                                 pixel_generators::PixelAddChoice::RandomGreenShade => { pixel_generators::get_random_green_shade() }
                                 pixel_generators::PixelAddChoice::Black => { pixel_generators::get_black() }
                             }
-                        });
+                        }, | p | {
+                                pixel::hue(p)
+                            }
+                        );
                         let result = DynamicImage::ImageRgba8(r_image);
                         self.loaded_texture = Some(load_texture_from_dynamic_image(&result, ctx));
                         self.result_image = Some(result);
