@@ -1,6 +1,11 @@
 # Pixel sorting effect
 Simple tool for pixel sorting effect written in pure Rust.
 
+<img height="400" alt="UI" src="https://github.com/barabum0/pixel-sort-effect/assets/100563680/c615ee0e-7c20-4f4c-9472-69dcad707737">
+<img height="400" alt="image" src="https://github.com/barabum0/pixel-sort-effect/assets/100563680/b92fce23-0a8f-49cd-9725-ebdaf8dfa488">
+<img height="300" alt="image" src="https://github.com/barabum0/pixel-sort-effect/assets/100563680/b3081a50-c6f0-4717-900d-70a9c906077f">
+
+
 ## Examples
 - Luma low threshold = 140
   
