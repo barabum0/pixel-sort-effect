@@ -4,20 +4,6 @@ use image::{ImageBuffer, Luma, Pixel, Rgba};
 use rand::Rng;
 use rayon::prelude::*;
 
-use crate::pixel;
-
-fn mask_pixel(v: f64, low_threshold: f64, high_threshold: f64, invert_mask: bool) -> u8 {
-    if (low_threshold < v && v < high_threshold) ^ invert_mask { 255 } else { 0 }
-}
-
-pub(crate) fn mask_image(image: &ImageBuffer::<Rgba<u8>, Vec<u8>>, low_threshold: f64, high_threshold: f64, invert_mask: bool) -> ImageBuffer::<Luma<u8>, Vec<u8>> {
-    let (width, height) = image.dimensions();
-
-    ImageBuffer::<Luma<u8>, Vec<u8>>::from_fn(width, height, |x, y| {
-        Luma::from([mask_pixel(pixel::luminance(image.get_pixel(x, y)), low_threshold, high_threshold, invert_mask)])
-    })
-}
-
 fn pixel_matrix(image: &ImageBuffer::<Rgba<u8>, Vec<u8>>) -> Vec<Vec<&Rgba<u8>>> {
     image.rows().map(|r| r.collect()).collect()
 }

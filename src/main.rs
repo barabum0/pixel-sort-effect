@@ -5,13 +5,14 @@ use image::{DynamicImage, Pixel};
 use rand::Rng;
 use rayon::prelude::*;
 use rfd::FileDialog;
-use crate::pixel::PixelSortKeyChoice;
+use crate::pixel::{luminance, PixelSortKeyChoice};
 
-use crate::sort_effect::{mask_image, process_sorting_effect};
+use crate::sort_effect::{process_sorting_effect};
 
 mod sort_effect;
 mod pixel_generators;
 mod pixel;
+mod mask;
 
 // Структура для хранения данных GUI
 struct MyApp {
@@ -106,7 +107,7 @@ impl App for MyApp {
                                     if self.is_mask_showed {
                                         self.loaded_texture = Some(
                                             load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
-                                                mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask)
+                                                mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, luminance)
                                             ), ctx)
                                         );
                                     }
@@ -166,7 +167,7 @@ impl App for MyApp {
                         } else {
                             self.loaded_texture = Some(
                                 load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
-                                    mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask)
+                                    mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, luminance)
                                 ), ctx)
                             );
                         }
@@ -184,7 +185,7 @@ impl App for MyApp {
                         self.last_error = Some("Image is not loaded".to_string());
                         self.is_error = true;
                     } else {
-                        let mask = mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask);
+                        let mask = mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, luminance);
 
                         let (r_image, duration) = process_sorting_effect(
                             &self.opened_image.clone().unwrap().to_rgba8(), &mask, self.random_prob,
