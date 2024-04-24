@@ -1,5 +1,6 @@
 use image::{ImageBuffer, Luma, Rgba};
 use rayon::prelude::*;
+use crate::pixel::{hue, luminance, some_color};
 
 #[derive(Debug)]
 #[derive(PartialEq)]

@@ -1,8 +1,9 @@
 use eframe::{App, Frame, NativeOptions};
 use egui::{Color32, ColorImage, RichText, TextureHandle, vec2, ViewportBuilder};
-use image::{DynamicImage};
+use image::{DynamicImage, Rgba};
 use rfd::FileDialog;
-use crate::pixel::{luminance, PixelSortKeyChoice};
+use crate::mask::MaskFuncChoice;
+use crate::pixel::{hue, luminance, PixelSortKeyChoice, some_color};
 
 use crate::sort_effect::{process_sorting_effect};
 
@@ -44,6 +45,7 @@ impl Default for MyApp {
             random_prob: 0.45,
             pixel_add_choice: pixel_generators::PixelAddChoice::RandomPixel,
             pixel_sort_choice: PixelSortKeyChoice::Hue,
+            mask_func_choice: mask::MaskFuncChoice::Luminance,
             show_settings: false,
         }
     }
@@ -106,7 +108,17 @@ impl App for MyApp {
                                     if self.is_mask_showed {
                                         self.loaded_texture = Some(
                                             load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
-                                                mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, luminance)
+                                                mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, |p| {
+                                                    match self.mask_func_choice {
+                                                        MaskFuncChoice::Luminance => { luminance(p) }
+                                                        MaskFuncChoice::Hue => { hue(p) as f64 }
+                                                        MaskFuncChoice::BrokenHue => { some_color(p) as f64 }
+                                                        MaskFuncChoice::Red => { p.0[0] as f64 }
+                                                        MaskFuncChoice::Green => { p.0[1] as f64 }
+                                                        MaskFuncChoice::Blue => { p.0[2] as f64 }
+                                                        MaskFuncChoice::ColorSum => { p.0[0] as f64 + p.0[1] as f64 + p.0[2] as f64 }
+                                                    }
+                                                })
                                             ), ctx)
                                         );
                                     }
@@ -114,17 +126,17 @@ impl App for MyApp {
                                 ui.add_space(10.0);
                             });
                             ui.horizontal(|ui| {
-                               egui::ComboBox::from_label("Mask function")
-                                .selected_text(format!("{:?}", self.mask_func_choice))
-                                .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Luminance, "Luminance");
-                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Hue, "Hue");
-                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::BrokenHue, "Broken hue");
-                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Red, "Red channel");
-                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Green, "Green channel");
-                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Blue, "Blue channel");
-                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of colors");
-                                })
+                                egui::ComboBox::from_label("Mask function")
+                                    .selected_text(format!("{:?}", self.mask_func_choice))
+                                    .show_ui(ui, |ui| {
+                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Luminance, "Luminance");
+                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Hue, "Hue");
+                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::BrokenHue, "Broken hue");
+                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Red, "Red channel");
+                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Green, "Green channel");
+                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Blue, "Blue channel");
+                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of colors");
+                                    })
                             });
                         });
 
@@ -179,7 +191,17 @@ impl App for MyApp {
                         } else {
                             self.loaded_texture = Some(
                                 load_texture_from_dynamic_image(&DynamicImage::ImageLuma8(
-                                    mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, luminance)
+                                    mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, |p| {
+                                        match self.mask_func_choice {
+                                            MaskFuncChoice::Luminance => { luminance(p) }
+                                            MaskFuncChoice::Hue => { hue(p) as f64 }
+                                            MaskFuncChoice::BrokenHue => { some_color(p) as f64 }
+                                            MaskFuncChoice::Red => { p.0[0] as f64 }
+                                            MaskFuncChoice::Green => { p.0[1] as f64 }
+                                            MaskFuncChoice::Blue => { p.0[2] as f64 }
+                                            MaskFuncChoice::ColorSum => { p.0[0] as f64 + p.0[1] as f64 + p.0[2] as f64 }
+                                        }
+                                    })
                                 ), ctx)
                             );
                         }
@@ -197,7 +219,17 @@ impl App for MyApp {
                         self.last_error = Some("Image is not loaded".to_string());
                         self.is_error = true;
                     } else {
-                        let mask = mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, luminance);
+                        let mask = mask::mask_image(&self.opened_image.clone().unwrap().to_rgba8(), self.low_threshold, self.high_threshold, self.invert_mask, |p| {
+                            match self.mask_func_choice {
+                                MaskFuncChoice::Luminance => { luminance(p) }
+                                MaskFuncChoice::Hue => { hue(p) as f64 }
+                                MaskFuncChoice::BrokenHue => { some_color(p) as f64 }
+                                MaskFuncChoice::Red => { p.0[0] as f64 }
+                                MaskFuncChoice::Green => { p.0[1] as f64 }
+                                MaskFuncChoice::Blue => { p.0[2] as f64 }
+                                MaskFuncChoice::ColorSum => { p.0[0] as f64 + p.0[1] as f64 + p.0[2] as f64 }
+                            }
+                        });
 
                         let (r_image, duration) = process_sorting_effect(
                             &self.opened_image.clone().unwrap().to_rgba8(), &mask, self.random_prob,
