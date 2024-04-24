@@ -156,7 +156,7 @@ impl App for MyApp {
                                 ui.add_space(10.0);
                             });
                             ui.horizontal(|ui| {
-                                egui::ComboBox::from_label("Mask function")
+                                let choice = egui::ComboBox::from_label("Mask function")
                                     .selected_text(format!("{:?}", self.mask_func_choice))
                                     .show_ui(ui, |ui| {
                                         ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Luminance, "Luminance");
@@ -166,7 +166,11 @@ impl App for MyApp {
                                         ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Green, "Green channel");
                                         ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Blue, "Blue channel");
                                         ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of colors");
-                                    })
+                                    });
+
+                                if choice.response.changed() && self.is_mask_showed {
+                                    self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
+                                }
                             });
                         });
 
