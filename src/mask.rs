@@ -14,7 +14,7 @@ pub enum MaskFuncChoice {
 }
 
 impl MaskFuncChoice {
-    fn get_range(&self) -> (f64, f64) {
+    pub fn get_range(&self) -> (f64, f64) {
         match self {
             MaskFuncChoice::Luminance => { (0.0, 255.0) }
             MaskFuncChoice::Hue => { (0.0, 360.0) }

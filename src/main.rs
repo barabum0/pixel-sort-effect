@@ -25,6 +25,7 @@ struct MyApp {
     random_prob: f64,
     pixel_add_choice: pixel_generators::PixelAddChoice,
     pixel_sort_choice: PixelSortKeyChoice,
+    mask_func_choice: mask::MaskFuncChoice,
     show_settings: bool,
 }
 
@@ -96,10 +97,11 @@ impl App for MyApp {
                             ui.horizontal(|ui| {
                                 ui.checkbox(&mut self.invert_mask, "Invert mask?");
                                 ui.add_space(50.0);
+                                let (mask_range_from, mask_range_to) = self.mask_func_choice.get_range();
 
-                                let lt_slider = ui.add(egui::Slider::new(&mut self.low_threshold, 0.0..=256.0).text("Luma Low threshold"));
+                                let lt_slider = ui.add(egui::Slider::new(&mut self.low_threshold, mask_range_from..=mask_range_to).text("Luma Low threshold"));
                                 ui.add_space(5.0);
-                                let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, 0.0..=256.0).text("Luma High threshold"));
+                                let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, mask_range_from..=mask_range_to).text("Luma High threshold"));
                                 if lt_slider.changed() || ht_slider.changed() {
                                     if self.is_mask_showed {
                                         self.loaded_texture = Some(
@@ -110,6 +112,19 @@ impl App for MyApp {
                                     }
                                 }
                                 ui.add_space(10.0);
+                            });
+                            ui.horizontal(|ui| {
+                               egui::ComboBox::from_label("Mask function")
+                                .selected_text(format!("{:?}", self.mask_func_choice))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Luminance, "Luminance");
+                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Hue, "Hue");
+                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::BrokenHue, "Broken hue");
+                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Red, "Red channel");
+                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Green, "Green channel");
+                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Blue, "Blue channel");
+                                    ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of colors");
+                                })
                             });
                         });
 
