@@ -1,8 +1,7 @@
 use colors_transform::Color;
-use easy_imgui_window::winit::raw_window_handle::{HasDisplayHandle, HasRawWindowHandle, HasWindowHandle};
 use eframe::{App, Frame, NativeOptions};
-use egui::{Color32, ColorImage, RichText, TextureHandle, vec2, ViewportBuilder, ViewportCommand, Widget};
-use image::{DynamicImage, Pixel, Rgba};
+use egui::{Color32, ColorImage, RichText, TextureHandle, vec2, ViewportBuilder, Widget};
+use image::{DynamicImage, Pixel};
 use rand::Rng;
 use rayon::prelude::*;
 use rfd::FileDialog;
