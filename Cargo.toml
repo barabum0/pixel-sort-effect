@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 colors-transform = "0.2.11"
-easy-imgui-window = "0.3.0"
 eframe = "0.27.2"
 egui = "0.27.2"
 image = "0.25.1"
