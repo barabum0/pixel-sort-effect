@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 use eframe::{App, Frame, NativeOptions};
-use egui::{Color32, ColorImage, RichText, TextureHandle, vec2, ViewportBuilder};
+use egui::{Color32, ColorImage, Response, RichText, TextureHandle, vec2, ViewportBuilder};
 use image::{DynamicImage, ImageBuffer, Luma};
 use rfd::FileDialog;
 
@@ -98,7 +98,7 @@ impl MyApp {
 
 impl App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
-        egui::CentralPanel::default().show(ctx, | ui| {
+        egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Choose File").clicked() {
                     let file = FileDialog::new().pick_file();
@@ -141,7 +141,11 @@ impl App for MyApp {
                         ui.label("Mask Settings");
                         ui.group(|ui| {
                             ui.horizontal(|ui| {
-                                ui.checkbox(&mut self.invert_mask, "Invert mask?");
+                                if ui.checkbox(&mut self.invert_mask, "Invert mask?").changed() {
+                                    if self.is_mask_showed {
+                                        self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
+                                    }
+                                };
                                 ui.add_space(50.0);
                                 let (mask_range_from, mask_range_to) = self.mask_func_choice.get_range();
 
@@ -156,19 +160,21 @@ impl App for MyApp {
                                 ui.add_space(10.0);
                             });
                             ui.horizontal(|ui| {
-                                let choice = egui::ComboBox::from_label("Mask function")
+                                let mut choice_responses: Vec<Response> = vec![];
+
+                                egui::ComboBox::from_label("Mask function")
                                     .selected_text(format!("{:?}", self.mask_func_choice))
                                     .show_ui(ui, |ui| {
-                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Luminance, "Luminance");
-                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Hue, "Hue");
-                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::BrokenHue, "Broken hue");
-                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Red, "Red channel");
-                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Green, "Green channel");
-                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Blue, "Blue channel");
-                                        ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of colors");
-                                    }).response;
+                                        choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Luminance, "Luminance"));
+                                        choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Hue, "Hue"));
+                                        choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::BrokenHue, "Broken hue"));
+                                        choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Red, "Red channel"));
+                                        choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Green, "Green channel"));
+                                        choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Blue, "Blue channel"));
+                                        choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of color"));
+                                    });
 
-                                if choice.changed() {
+                                if choice_responses.iter().any(|r| r.clicked()) {
                                     if self.is_mask_showed {
                                         self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
                                     }
