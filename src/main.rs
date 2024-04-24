@@ -10,6 +10,7 @@ use crate::sort_effect::{mask_image, process_sorting_effect};
 
 mod sort_effect;
 mod pixel_generators;
+mod pixel;
 
 // Структура для хранения данных GUI
 struct MyApp {
