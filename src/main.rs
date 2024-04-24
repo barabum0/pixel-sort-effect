@@ -69,6 +69,12 @@ impl MyApp {
         )
     }
 
+    fn update_mask(&mut self, ctx: &egui::Context) {
+        if self.is_mask_showed {
+            self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
+        }
+    }
+
     fn gen_effect(&self, mask: &ImageBuffer<Luma<u8>, Vec<u8>>) -> (DynamicImage, Duration) {
         let start = Instant::now();
         (DynamicImage::ImageRgba8(process_sorting_effect(
@@ -141,22 +147,14 @@ impl App for MyApp {
                         ui.label("Mask Settings");
                         ui.group(|ui| {
                             ui.horizontal(|ui| {
-                                if ui.checkbox(&mut self.invert_mask, "Invert mask?").changed() {
-                                    if self.is_mask_showed {
-                                        self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
-                                    }
-                                };
+                                if ui.checkbox(&mut self.invert_mask, "Invert mask?").changed() { self.update_mask(&ctx) };
                                 ui.add_space(50.0);
                                 let (mask_range_from, mask_range_to) = self.mask_func_choice.get_range();
 
                                 let lt_slider = ui.add(egui::Slider::new(&mut self.low_threshold, mask_range_from..=mask_range_to).text("Low threshold"));
                                 ui.add_space(5.0);
                                 let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, mask_range_from..=mask_range_to).text("High threshold"));
-                                if lt_slider.changed() || ht_slider.changed() {
-                                    if self.is_mask_showed {
-                                        self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
-                                    }
-                                }
+                                if lt_slider.changed() || ht_slider.changed() { self.update_mask(&ctx) }
                                 ui.add_space(10.0);
                             });
                             ui.horizontal(|ui| {
@@ -174,11 +172,7 @@ impl App for MyApp {
                                         choice_responses.push(ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of color"));
                                     });
 
-                                if choice_responses.iter().any(|r| r.clicked()) {
-                                    if self.is_mask_showed {
-                                        self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
-                                    }
-                                }
+                                if choice_responses.iter().any(|r| r.clicked()) { self.update_mask(&ctx) }
                             });
                         });
 
