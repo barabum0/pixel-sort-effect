@@ -137,7 +137,6 @@ impl App for MyApp {
 
             if self.show_settings {
                 egui::Window::new("Effect Settings")
-                    .open(&mut self.show_settings) // Keeps the window open or closes it based on the bool
                     .show(ctx, |ui| {
                         ui.label("Mask Settings");
                         ui.group(|ui| {
@@ -146,9 +145,9 @@ impl App for MyApp {
                                 ui.add_space(50.0);
                                 let (mask_range_from, mask_range_to) = self.mask_func_choice.get_range();
 
-                                let lt_slider = ui.add(egui::Slider::new(&mut self.low_threshold, mask_range_from..=mask_range_to).text("Luma Low threshold"));
+                                let lt_slider = ui.add(egui::Slider::new(&mut self.low_threshold, mask_range_from..=mask_range_to).text("Low threshold"));
                                 ui.add_space(5.0);
-                                let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, mask_range_from..=mask_range_to).text("Luma High threshold"));
+                                let ht_slider = ui.add(egui::Slider::new(&mut self.high_threshold, mask_range_from..=mask_range_to).text("High threshold"));
                                 if lt_slider.changed() || ht_slider.changed() {
                                     if self.is_mask_showed {
                                         self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
