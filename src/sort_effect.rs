@@ -1,5 +1,3 @@
-use std::time::{Duration, Instant};
-
 use image::{ImageBuffer, Luma, Pixel, Rgba};
 use rand::Rng;
 use rayon::prelude::*;
@@ -21,12 +19,11 @@ pub fn process_sorting_effect<
 {
     let (width, height) = image.dimensions();
 
-    let mut rows: Vec<Vec<&Rgba<u8>>> = pixel_matrix(&image);
-
+    let rows: Vec<Vec<&Rgba<u8>>> = pixel_matrix(&image);
     let new_rows: Vec<Vec<Rgba<u8>>> = rows.into_par_iter().enumerate()
-        .map(|(y, mut row)| {
+        .map(|(y, row)| {
             let mut rng = rand::thread_rng();
-            let mut re: Vec<(usize, usize, Rgba<u8>)> = row.iter().enumerate()
+            let re: Vec<(usize, usize, Rgba<u8>)> = row.iter().enumerate()
                 .filter(|(x, _)| mask_image.get_pixel(x.clone() as u32, y as u32).0[0] == 255)
                 .enumerate()
                 .map(|(x, e)| (x, e.0, **e.1))

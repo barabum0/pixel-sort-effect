@@ -32,7 +32,7 @@ pub fn some_color(pixel: &Rgba<u8>) -> i16 {
         return 0;
     }
 
-    let mut hue: i16 = 0;
+    let mut hue: i16;
     if max == red {
         hue = (green - blue) / (max - min);
     } else if max == green {

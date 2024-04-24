@@ -73,7 +73,7 @@ impl MyApp {
         let start = Instant::now();
         (DynamicImage::ImageRgba8(process_sorting_effect(
             &self.opened_image.clone().unwrap().to_rgba8(), mask, self.random_prob,
-            |x, y, p| {
+            |_x, _y, _p| {
                 match self.pixel_add_choice {
                     pixel_generators::PixelAddChoice::RandomPixel => { pixel_generators::get_random_pixel() }
                     pixel_generators::PixelAddChoice::RandomRedShade => { pixel_generators::get_random_red_shade() }
@@ -97,8 +97,8 @@ impl MyApp {
 }
 
 impl App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut Frame) {
-        egui::CentralPanel::default().show(ctx, |mut ui| {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
+        egui::CentralPanel::default().show(ctx, | ui| {
             ui.horizontal(|ui| {
                 if ui.button("Choose File").clicked() {
                     let file = FileDialog::new().pick_file();
@@ -166,10 +166,12 @@ impl App for MyApp {
                                         ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Green, "Green channel");
                                         ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::Blue, "Blue channel");
                                         ui.selectable_value(&mut self.mask_func_choice, mask::MaskFuncChoice::ColorSum, "Sum of colors");
-                                    });
+                                    }).response;
 
-                                if choice.response.changed() && self.is_mask_showed {
-                                    self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
+                                if choice.changed() {
+                                    if self.is_mask_showed {
+                                        self.loaded_texture = Some(load_texture_from_dynamic_image(&self.gen_mask(), ctx));
+                                    }
                                 }
                             });
                         });
